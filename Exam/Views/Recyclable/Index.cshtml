@@ -1,0 +1,134 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recyclable</title>
+    <link rel="stylesheet" href="~/css/styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="form-container">
+        <div class="form-section">
+            <h3>Recyclable Type</h3>
+            <form id="recyclableTypeForm" action="/Recyclable/SaveRecyclableType" method="post">
+                <label for="type">Type:</label>
+                <input type="text" id="type" name="Type" required>
+
+                <label for="rate">Rate:</label>
+                <input type="text" id="rate" name="Rate" required>
+
+                <label for="minKg">MinKg:</label>
+                <input type="text" id="minKg" name="MinKg" required>
+
+                <label for="maxKg">MaxKg:</label>
+                <input type="text" id="maxKg" name="MaxKg" required>
+
+                <div class="button-group">
+                    <button type="submit">Save</button>
+                    <button type="reset">Reset</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="form-section">
+            <h3>Recyclable Item</h3>
+            <form id="recyclableItemForm" action="/Recyclable/SaveRecyclableItem" method="post">
+                <label for="recyclableTypeDropdown">Recyclable Type:</label>
+                <select id="recyclableTypeDropdown" name="recyclableType" required>
+                    <option value="">Select</option>
+                    @foreach (var item in ViewBag.RecyclableTypes as List<SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+
+                <label for="description">Description:</label>
+                <input type="text" id="description" name="description" required />
+
+                <label for="weight">Weight:</label>
+                <input type="text" id="weight" name="weight" required />
+
+                <span id="weightError" style="color: red; display:none;"></span> 
+
+                <label for="computedRate">Computed Rate:</label>
+                <input type="text" id="computedRate" name="computedRate" readonly />
+
+                <div class="button-group">
+                    <button type="submit">Save</button>
+                    <button type="reset">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+
+            $('#weight').on('input', function () {
+                var recyclableTypeId = $('#recyclableTypeDropdown').val();
+                var weight = $(this).val();
+
+                if (recyclableTypeId && weight) {
+      
+                    $.ajax({
+                        url: '/Recyclable/ComputeRate',
+                        type: 'POST',
+                        data: {
+                            recyclableTypeId: recyclableTypeId,
+                            weight: weight
+                        },
+                        success: function (response) {
+                            $('#computedRate').val(response.computedRate);
+                        },
+                        error: function () {
+                            alert('Error computing the rate.');
+                        }
+                    });
+
+                    $.ajax({
+                        url: '/Recyclable/ValidateWeight',
+                        type: 'GET',
+                        data: {
+                            recyclableType: recyclableTypeId,
+                            weight: weight
+                        },
+                        success: function (response) {
+                            if (!response.isValid) {
+                                $('#weightError').text(response.message).show();
+                            } else {
+                                $('#weightError').hide();
+                            }
+                        },
+                        error: function () {
+                            $('#weightError').text("Error validating the weight.").show();
+                        }
+                    });
+                }
+            });
+
+     
+            $('#recyclableTypeDropdown').on('change', function () {
+                var recyclableTypeId = $(this).val();
+
+         
+                if (recyclableTypeId) {
+
+                    $('#weight').val(''); 
+                    $('#computedRate').val(''); 
+                    $('#weightError').hide();  
+                } else {
+                 
+                    $('#weight').val('');
+                    $('#computedRate').val('');
+                    $('#weightError').hide();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
